@@ -12,33 +12,30 @@ import z from '@deepseek-ai/schemastery'
 
 export const MODLENS_SETTINGS_NAMESPACE = 'modlens-funloveliness'
 
-// Providers that accept apiKey/baseUrl/model here. CLI-only providers
+// Providers that accept apiKeyEnv/baseUrl/model here. CLI-only providers
 // (antigravity-cli, claude-cli) have no fields in the settings namespace.
 export const API_PROVIDERS = ['gemini-api', 'openai', 'anthropic']
 
-// CLI environment bindings per provider. apiKey fields ride the process
-// environment (never the config file); baseUrl fields are mirrored into the
-// config file as well, but the env copy keeps a settings-only deployment
-// working even when the CLI reads an untouched file.
+// CLI environment bindings per provider. The key literal lives in the dsh
+// credentials domain, named by the section's apiKeyEnv reference; the bridge
+// resolves it into the CLI environment at call time (never the config file).
+// baseUrl fields are mirrored into the config file as well, but the env copy
+// keeps a settings-only deployment working even when the CLI reads an
+// untouched file.
 export const PROVIDER_ENV = {
   'gemini-api': { apiKey: 'GEMINI_API_KEY' },
   'openai': { apiKey: 'OPENAI_API_KEY', baseUrl: 'OPENAI_BASE_URL' },
   'anthropic': { apiKey: 'ANTHROPIC_API_KEY', baseUrl: 'ANTHROPIC_BASE_URL' },
 }
 
-const PROVIDER_SCHEMA = z.object({
-  apiKey: z.string().role('secret'),
-  baseUrl: z.string(),
-  model: z.string(),
-})
-
+// Flat section: the card edits one engine at a time (the default provider),
+// which keeps the GUI form and the config mirror simple; other engines can
+// still be configured by hand in ~/.modlens/config.json.
 const SETTINGS_SCHEMA = z.object({
   provider: z.string(),
-  providers: z.object({
-    'gemini-api': PROVIDER_SCHEMA,
-    'openai': PROVIDER_SCHEMA,
-    'anthropic': PROVIDER_SCHEMA,
-  }),
+  apiKeyEnv: z.string(),
+  baseUrl: z.string(),
+  model: z.string(),
 })
 
 function configFile() {
@@ -59,15 +56,16 @@ function writeConfigFile(value) {
     ...value.provider === undefined ? {} : { provider: value.provider },
     providers: { ...(existing.providers ?? {}) },
   }
-  for (const name of API_PROVIDERS) {
-    const section = value.providers?.[name]
-    if (section === undefined) continue
-    const target = { ...(next.providers[name] ?? {}) }
-    if (section.baseUrl !== undefined) target.baseUrl = section.baseUrl
-    if (section.model !== undefined) target.model = section.model
-    // apiKey deliberately never written: the dsh settings store holds the
-    // secret and injects it into the CLI environment at call time.
-    next.providers[name] = target
+  // Mirror the flat section into the CLI's per-provider structure. The
+  // credential reference and the key literal are never written: the
+  // credentials domain holds the secret and the bridge resolves it into the
+  // CLI environment at call time.
+  const provider = value.provider ?? existing.provider
+  if (provider !== undefined && typeof provider === 'string') {
+    const target = { ...(next.providers[provider] ?? {}) }
+    if (value.baseUrl !== undefined) target.baseUrl = value.baseUrl
+    if (value.model !== undefined) target.model = value.model
+    next.providers[provider] = target
   }
   mkdirSync(join(homedir(), '.modlens'), { recursive: true, mode: 0o700 })
   writeFileSync(file, JSON.stringify(next, null, 2), { mode: 0o600 })
@@ -92,23 +90,33 @@ export function registerSettings(ctx) {
 }
 
 /**
- * Resolve the CLI environment bindings from the settings store. Unset fields
- * are omitted so a process-level value (or the config file) still applies.
- * @param ctx - the plugin context (settings service optional).
+ * Resolve the CLI environment bindings from the settings store and the
+ * credentials domain. Unset fields are omitted so a process-level value (or
+ * the config file) still applies; a credential reference that resolves to
+ * nothing injects no key.
+ * @param ctx - the plugin context (settings and credentials services optional).
  * @returns a partial environment object for the CLI spawn.
  */
-export function settingsEnv(ctx) {
+export async function settingsEnv(ctx) {
   const settings = ctx.get('settings')
   if (settings === undefined) return {}
+  const credentials = ctx.get('credentials')
   const value = settings.get(MODLENS_SETTINGS_NAMESPACE)
   if (value === undefined) return {}
+  const bindings = PROVIDER_ENV[value.provider]
+  if (bindings === undefined) return {}
   const env = {}
-  for (const name of API_PROVIDERS) {
-    const bindings = PROVIDER_ENV[name]
-    const section = value.providers?.[name]
-    if (bindings === undefined || section === undefined) continue
-    if (section.apiKey) env[bindings.apiKey] = section.apiKey
-    if (bindings.baseUrl && section.baseUrl) env[bindings.baseUrl] = section.baseUrl
+  if (bindings.baseUrl && value.baseUrl) env[bindings.baseUrl] = value.baseUrl
+  if (bindings.apiKey && value.apiKeyEnv && credentials !== undefined) {
+    try {
+      const resolved = await credentials.resolve(value.apiKeyEnv)
+      if (resolved !== undefined && resolved.value !== undefined) {
+        env[bindings.apiKey] = resolved.value
+      }
+    } catch {
+      // Unresolvable reference: no key injected, the CLI falls back to its
+      // own environment or config file.
+    }
   }
   return env
 }

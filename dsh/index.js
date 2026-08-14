@@ -100,7 +100,7 @@ export function apply(ctx, config = {}) {
         process.execPath,
         cliArgs,
         exec.signal,
-        settingsEnv(ctx),
+        await settingsEnv(ctx),
       )
       if (code !== 0) {
         throw new Error(
@@ -382,7 +382,7 @@ async function readImageBlock(ctx, block, signal) {
       process.execPath,
       [cli, '-i', file, '--timeout', String(CLI_TIMEOUT_MS)],
       signal,
-      settingsEnv(ctx),
+      await settingsEnv(ctx),
     )
     if (code !== 0) {
       throw new Error((stderr || stdout).trim().slice(0, 300))
