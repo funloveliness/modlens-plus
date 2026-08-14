@@ -179,7 +179,7 @@ function registerVisionProvider(ctx, config) {
       // defaults a plain object must supply itself (their absence is exactly
       // the silent registration failure this catch used to swallow).
       providerInfo(provider) {
-        return { id: provider, name: 'DeepSeek (modlens-plus vision)' }
+        return { id: provider, name: 'DeepSeek (vision)' }
       },
       providerRetryPolicy() {
         return undefined
@@ -189,7 +189,7 @@ function registerVisionProvider(ctx, config) {
           const models = await ctx.llm.listModels(upstream, signal)
           return models.filter(shouldWrap).map((model) => ({
             ...withVision(model),
-            name: `${model.name ?? model.id} (modlens-plus vision)`,
+            name: `${model.name ?? model.id} (vision)`,
           }))
         } catch {
           return []
