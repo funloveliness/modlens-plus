@@ -1,10 +1,12 @@
 // OpenAI-compatible provider: works with any /chat/completions endpoint that
 // accepts image_url content (DashScope qwen-vl, OpenAI, GLM, ...). No portable
 // schema enforcement across vendors, so the schema rides in the prompt and the
-// response goes through tolerant JSON extraction.
+// response goes through tolerant JSON extraction; structural tolerance
+// (repair/degrade) lives in ../tolerance.ts and is applied once by the
+// analyzer after every provider, so no vendor's minor output differences fail
+// the read here.
 import { readLocalImageBase64 } from '../imageInput.ts';
 import { buildVisionPrompt, JSON_TEMPLATE_INSTRUCTION } from '../prompt.ts';
-import { missingSchemaFields } from '../schema.ts';
 import { mergeExtraBody } from '../util/extraBody.ts';
 import { extractJson, truncate } from '../util/json.ts';
 import { redactSecrets } from '../util/redact.ts';
@@ -89,16 +91,6 @@ ${JSON_TEMPLATE_INSTRUCTION}`;
     const result = extractJson(text);
     if (result === null) {
         throw new Error(`OpenAI-compatible API returned non-JSON output: ${truncate(text)}`);
-    }
-    // No portable server-side schema enforcement on this route, so verify the
-    // shape instead of silently returning something that only looks right.
-    // Checking only top-level keys still let {"ocr":{}} through, so the model
-    // received an empty shell that looked like evidence.
-    const missing = missingSchemaFields(result);
-    if (missing.length > 0) {
-        throw new Error(
-            `OpenAI-compatible API returned JSON that does not match the vision schema (missing: ${missing.join(', ')}). Retry, or switch to gemini-api / anthropic for enforced schemas. Got: ${truncate(text)}`,
-        );
     }
 
     return {

@@ -7,14 +7,18 @@
 //
 // Loaded via the cordis.patch.yml row `@liustack/modlens/dsh` (see the
 // package.json `dsh.bundle` manifest). Providers, reuse grants, and guard
-// rules keep living in ~/.modlens/config.json, shared with every harness.
+// rules keep living in ~/.modlens/config.json, shared with every harness;
+// the settings bridge (settings.js) mirrors GUI-editable non-secret fields
+// there and injects the stored secrets into the CLI environment at call time.
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { registerSettings, settingsEnv } from './settings.js'
 
 const CLI_PATH = fileURLToPath(new URL('../dist/main.js', import.meta.url))
 // Kept in lockstep with src/schema.ts by a repo test; the plugin file cannot
-// import the TS source and stays fully dependency-free (node builtins only).
+// import the TS source and stays fully dependency-free (node builtins plus
+// the single @deepseek-ai/schemastery dependency for the settings schema).
 const OUTPUT_SCHEMA = JSON.parse(
   readFileSync(new URL('./vision-schema.json', import.meta.url), 'utf8'),
 )
@@ -22,7 +26,7 @@ const OUTPUT_SCHEMA = JSON.parse(
 const CLI_TIMEOUT_MS = 180_000
 
 export const name = 'modlens'
-export const inject = ['tools', 'agents', 'attachments', 'llm']
+export const inject = ['tools', 'agents', 'attachments', 'llm', 'settings']
 
 export const MEDIA_EXT = {
   'image/png': '.png',
@@ -34,6 +38,9 @@ export const MEDIA_EXT = {
 }
 
 export function apply(ctx, config = {}) {
+  // Settings-optional: a composition without the settings service skips
+  // registration and keeps reading ~/.modlens/config.json directly.
+  registerSettings(ctx)
   // Off by default since the vision provider converts at request time and
   // keeps the durable log (and the UI thumbnail) intact; turn it on only for
   // setups where images enter through a provider this plugin does not wrap.
@@ -89,7 +96,12 @@ export function apply(ctx, config = {}) {
       if (args.prompt) {
         cliArgs.push('--prompt', args.prompt)
       }
-      const { stdout, stderr, code } = await run(process.execPath, cliArgs, exec.signal)
+      const { stdout, stderr, code } = await run(
+        process.execPath,
+        cliArgs,
+        exec.signal,
+        settingsEnv(ctx),
+      )
       if (code !== 0) {
         throw new Error(
           `modlens failed (exit ${code}): ${(stderr || stdout).trim().slice(0, 500)}`,
@@ -370,6 +382,7 @@ async function readImageBlock(ctx, block, signal) {
       process.execPath,
       [cli, '-i', file, '--timeout', String(CLI_TIMEOUT_MS)],
       signal,
+      settingsEnv(ctx),
     )
     if (code !== 0) {
       throw new Error((stderr || stdout).trim().slice(0, 300))
@@ -399,9 +412,15 @@ async function readImageBlock(ctx, block, signal) {
   }
 }
 
-function run(command, args, signal) {
+function run(command, args, signal, env) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'], signal })
+    const child = spawn(command, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      signal,
+      // Settings-stored secrets ride the CLI environment (env-over-file
+      // precedence); without a settings bridge the child inherits process.env.
+      env: env ? { ...process.env, ...env } : undefined,
+    })
     let stdout = ''
     let stderr = ''
     child.stdout.on('data', (chunk) => {

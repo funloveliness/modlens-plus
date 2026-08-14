@@ -15,6 +15,7 @@ import {
     type VisionProvider,
 } from './providers/index.ts';
 import { missingSchemaFields } from './schema.ts';
+import { repairVisionResult, degradeVisionResult } from './tolerance.ts';
 import { redactSecrets } from './util/redact.ts';
 
 export interface AnalyzeOptions {
@@ -375,14 +376,18 @@ async function runProvider(
     }
 
     // Server-side schema enforcement is uneven across providers, and even the
-    // routes that have it can return a shell that only looks right. Verify the
-    // shape here so a structurally broken result fails loudly for every
-    // provider, and a failover peer gets its turn at a compliant answer.
+    // routes that have it can return a shell that only looks right. Weaker
+    // models routinely omit minor fields, so the result first goes through
+    // structural repair; output that still fails the strict schema is degraded
+    // into usable loose evidence (flagged in uncertainty) instead of failing
+    // the read — every model behind every route stays usable.
     const missing = missingSchemaFields(parsed.result);
     if (missing.length > 0) {
-        throw new Error(
-            `${provider.name} returned a result that does not match the vision schema (missing: ${missing.join(', ')}).`,
-        );
+        const repaired = repairVisionResult(parsed.result as Record<string, unknown>);
+        const stillMissing = missingSchemaFields(repaired);
+        parsed.result = stillMissing.length > 0
+            ? degradeVisionResult(repaired, stillMissing)
+            : repaired;
     }
 
     return parsed;
