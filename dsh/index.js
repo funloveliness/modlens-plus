@@ -41,6 +41,24 @@ export function apply(ctx, config = {}) {
   // Settings-optional: a composition without the settings service skips
   // registration and keeps reading ~/.modlens/config.json directly.
   registerSettings(ctx)
+  // Expose the modlens-plus settings namespace to configuration surfaces:
+  // registering it as a configurable provider's settings namespace makes the
+  // gateway's modelProviderNamespaces() expose it, so the Web settings card
+  // renders without any host allowlist change.
+  if (typeof ctx.llm?.registerConfigurableProviders === 'function') {
+    try {
+      ctx.llm.registerConfigurableProviders([{
+        provider: config.providerId || 'deepseek-modlens-plus',
+        displayName: 'ModLens Plus (vision)',
+        settingsNs: MODLENS_SETTINGS_NAMESPACE,
+        settingsPath: [],
+      }])
+    } catch (error) {
+      // DUPLICATE_DIRECTORY or a preview-era surface change: the card simply
+      // stays hidden; the engine and read_image tool still work.
+      console.error(`[modlens-plus] configurable-provider registration skipped: ${error}`)
+    }
+  }
   // Off by default since the vision provider converts at request time and
   // keeps the durable log (and the UI thumbnail) intact; turn it on only for
   // setups where images enter through a provider this plugin does not wrap.
