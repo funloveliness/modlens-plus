@@ -13,7 +13,7 @@
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { registerSettings, settingsEnv } from './settings.js'
+import { MODLENS_SETTINGS_NAMESPACE, registerSettings, settingsEnv } from './settings.js'
 
 const CLI_PATH = fileURLToPath(new URL('../dist/main.js', import.meta.url))
 // Kept in lockstep with src/schema.ts by a repo test; the plugin file cannot
