@@ -1,7 +1,7 @@
 # ModLens + Settings 插件 — 部署与验证清单
 
 自制插件：ModLens（MIT fork）增加 DSH Settings 可视化配置。
-代码位置：`D:\develop\modlens`（本地开发目录，尚未推 GitHub）。
+代码位置：`D:\develop\modlens`（本地开发目录，已推 GitHub：`funloveliness/modlens-plus`，尚未发 npm）。
 
 ## 已完成的代码改动（文件层面）
 
@@ -9,9 +9,9 @@
 |---|---|
 | `D:\develop\modlens\dsh\settings.js` | 新增：注册 `modlens` settings 命名空间（provider + gemini-api/openai/anthropic 的 apiKey[secret]/baseUrl/model），非密钥字段同步写 `~/.modlens/config.json`，密钥经环境变量注入 CLI |
 | `D:\develop\modlens\dsh\index.js` | `apply()` 调用 `registerSettings`；`run()` 支持 env；read_image 工具与粘贴转换两处 CLI 调用注入密钥 env |
-| `D:\develop\modlens\package.json` | dependencies 加 `@deepseek-ai/schemastery@^3.18.1` |
-| `D:\deepseek-harness\packages\host\apiproxy\src\api-proxy.ts` | `WEB_SETTINGS_NAMESPACES` 加 `'modlens'`（设置页显示开关） |
-| `C:\Users\刘增凡\.dsh\profiles\web\package.json` | dependencies 加 `"@liustack/modlens": "file:D:/develop/modlens"` |
+| `D:\develop\modlens\package.json` | dependencies 加 `@deepseek-ai/schemastery@^3.18.1`；改名 `modlens-plus`（dual-face：read_image 工具 + settings 桥 + Web 设置卡片） |
+| ~~`D:\deepseek-harness\packages\host\apiproxy\src\api-proxy.ts`~~ | ~~`WEB_SETTINGS_NAMESPACES` 加 `'modlens'`~~ —— **已废弃**：最终架构为官方核心零改动，改由 `ctx.llm.registerConfigurableProviders` 暴露设置命名空间 |
+| `C:\Users\刘增凡\.dsh\profiles\web\package.json` | dependencies 加 `"modlens-plus": "D:/develop/modlens"` |
 | `C:\Users\刘增凡\.dsh\profiles\web\cordis.patch.yml` | insert modlens 插件行 |
 
 ## 剩余步骤（执行环境恢复后按序执行）
@@ -27,7 +27,7 @@ node --check dsh\index.js && node --check dsh\settings.js
 ### 2. 安装到 profile
 ```powershell
 cd C:\Users\刘增凡\.dsh\profiles\web
-pnpm install        # 生成 node_modules/@liustack/modlens 链接（file:）
+pnpm install        # 生成 node_modules/modlens-plus 链接（file:）
 ```
 
 ### 3. 重启 DSH 服务（用户操作）
@@ -37,10 +37,10 @@ node --import tsx/esm apps/cli/src/bin.ts "web"
 ```
 
 ### 4. 验证
-1. GUI 设置 → 插件配置 → 应出现 **modlens** 配置项
+1. GUI 设置 → 插件配置 → 应出现 **modlens-plus** 配置项
 2. 配置阿里引擎：provider=`openai`，baseUrl=`https://dashscope.aliyuncs.com/compatible-mode/v1`，apiKey=`DASHSCOPE_API_KEY` 的值，model=`qwen3-vl-flash`
 3. 检查 `~/.modlens/config.json` 是否写入 provider/providers（apiKey 不应出现在文件里）
-4. 模型选择器应出现 `DeepSeek-V4-Flash (modlens vision)` 变体
+4. 模型选择器应出现 `DeepSeek-V4-Flash (vision)` 变体
 5. 选该模型 → 粘贴图片 → 消息保留缩略图 + 模型读到证据文本
 6. 或直接要求模型调用 `read_image` 工具读本地图片路径
 

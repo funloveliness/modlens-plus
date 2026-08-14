@@ -19,8 +19,8 @@
 
 <p align="center">
   <a href="https://x.com/liustack"><img src="https://img.shields.io/badge/follow-%40liustack-black?style=flat-square&logo=x&logoColor=white" alt="Follow @liustack on X"></a>
-  <a href="https://www.npmjs.com/package/@liustack/modlens"><img src="https://img.shields.io/npm/v/@liustack/modlens?style=flat-square&label=npm&color=cb3837" alt="npm"></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/@liustack/modlens?style=flat-square" alt="Node.js"></a>
+  <a href="https://www.npmjs.com/package/modlens-plus"><img src="https://img.shields.io/npm/v/modlens-plus?style=flat-square&label=npm&color=cb3837" alt="npm"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/modlens-plus?style=flat-square" alt="Node.js"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/badge/Not%20backed%20by-Y%20Combinator-FF6600?style=flat-square&logo=ycombinator&logoColor=white" alt="Not backed by Y Combinator">
   <img src="https://img.shields.io/badge/users-unknown-lightgrey?style=flat-square" alt="Users unknown">
@@ -34,7 +34,7 @@ Issues are welcome any time: [open one](https://github.com/liustack/modlens/issu
 
 ## Highlights
 
-**🥇 The first vision plugin for DeepSeek Harness (dsh):** one command, `npx -y @deepseek-ai/dsh plugin --profile web add @liustack/modlens@latest`, and the text-only DeepSeek model behind dsh reads images through a native `read_image` tool. If dsh warns `declares no dsh.bundle`, pnpm's release-age gate installed an old version: see [troubleshooting](docs/troubleshooting.md#dsh-says-declares-no-dshbundle--installed-as-a-plain-dependency) for the one-line fix. For pasted images, switch the model selector to one of the two entries the plugin adds, **`DeepSeek-V4-Flash (modlens vision)`** or **`DeepSeek-V4-Pro (modlens vision)`**: pastes are admitted there, converted to evidence at request time (your message keeps its native thumbnail), and answered by the same DeepSeek route. The wrap covers DeepSeek and GLM text models only; their own vision models are excluded automatically.
+**🥇 The first vision plugin for DeepSeek Harness (dsh):** one command, `npx -y @deepseek-ai/dsh plugin --profile web add modlens-plus@latest`, and the text-only DeepSeek model behind dsh reads images through a native `read_image` tool. If dsh warns `declares no dsh.bundle`, pnpm's release-age gate installed an old version: see [troubleshooting](docs/troubleshooting.md#dsh-says-declares-no-dshbundle--installed-as-a-plain-dependency) for the one-line fix. For pasted images, switch the model selector to one of the two entries the plugin adds, **`DeepSeek-V4-Flash (vision)`** or **`DeepSeek-V4-Pro (vision)`**: pastes are admitted there, converted to evidence at request time (your message keeps its native thumbnail), and answered by the same DeepSeek route. The wrap covers DeepSeek and GLM text models only; their own vision models are excluded automatically.
 
 **Paste an image and it reads it.** No saving to a file and passing a path first.
 

@@ -28,7 +28,7 @@ describe('dsh plugin bundle', () => {
         expect(pkg.files).toContain('dsh');
         expect(pkg.files).toContain('cordis.patch.yml');
         const patch = fs.readFileSync(path.join(__dirname, '..', 'cordis.patch.yml'), 'utf-8');
-        expect(patch).toContain("name: '@liustack/modlens'");
+        expect(patch).toContain("name: 'modlens-plus'");
     });
 });
 
@@ -49,6 +49,8 @@ describe('dsh plugin auto-read (phase 2)', () => {
         };
         const handlers: Record<string, Handler> = {};
         const ctx = {
+            // No settings service in the mock: exercises registerSettings' skip path.
+            get: () => undefined,
             tools: { register: () => {} },
             attachments: {
                 readImage: async () => ({
@@ -110,6 +112,7 @@ describe('dsh plugin auto-read (phase 2)', () => {
         const handlers: Record<string, Handler> = {};
         plugin.apply(
             {
+                get: () => undefined,
                 tools: { register: () => {} },
                 // An API-shape drift: readImage resolves, but with no data field.
                 attachments: { readImage: async () => ({ ref: { mediaType: 'image/png' } }) },
@@ -145,6 +148,7 @@ describe('dsh plugin auto-read (phase 2)', () => {
                 const handlers: Record<string, Handler> = {};
                 plugin.apply(
                     {
+                        get: () => undefined,
                         tools: { register: () => {} },
                         attachments: {
                             readImage: async () => ({
@@ -218,6 +222,7 @@ describe('dsh plugin auto-read (phase 2)', () => {
         const bare: Record<string, unknown> = {};
         plugin.apply(
             {
+                get: () => undefined,
                 tools: { register: () => {} },
                 attachments: {},
                 on: (event: string, fn: unknown) => {
@@ -237,6 +242,7 @@ describe('dsh plugin vision provider (phase 3)', () => {
             apply: (ctx: unknown, config?: Record<string, unknown>) => void;
         };
         const ctx = {
+            get: () => undefined,
             tools: { register: () => {} },
             attachments: {},
             on: () => {},
@@ -275,34 +281,34 @@ describe('dsh plugin vision provider (phase 3)', () => {
             },
         };
         await loadWith(llm);
-        expect(registered[0].providers).toEqual(['deepseek-modlens']);
-        const providerInfo = registered[0].adapter.providerInfo('deepseek-modlens') as {
+        expect(registered[0].providers).toEqual(['deepseek-modlens-plus']);
+        const providerInfo = registered[0].adapter.providerInfo('deepseek-modlens-plus') as {
             id: string;
             name: string;
         };
-        expect(providerInfo.id).toBe('deepseek-modlens');
+        expect(providerInfo.id).toBe('deepseek-modlens-plus');
         expect(providerInfo.name.length).toBeGreaterThan(0);
-        expect(registered[0].adapter.providerRetryPolicy('deepseek-modlens')).toBeUndefined();
+        expect(registered[0].adapter.providerRetryPolicy('deepseek-modlens-plus')).toBeUndefined();
         const adapter = registered[0].adapter;
-        const models = (await adapter.listModels('deepseek-modlens')) as Array<{
+        const models = (await adapter.listModels('deepseek-modlens-plus')) as Array<{
             provider: string;
             name: string;
             inputModalities: string[];
         }>;
         expect(models).toHaveLength(1);
-        expect(models[0].provider).toBe('deepseek-modlens');
+        expect(models[0].provider).toBe('deepseek-modlens-plus');
         expect(models[0].inputModalities).toContain('image');
-        expect(models[0].name).toContain('modlens vision');
-        const info = (await adapter.resolveModel('deepseek-modlens', 'deepseek-v4-flash')) as {
+        expect(models[0].name).toContain('(vision)');
+        const info = (await adapter.resolveModel('deepseek-modlens-plus', 'deepseek-v4-flash')) as {
             provider: string;
             id: string;
             inputModalities: string[];
         };
-        expect(info.provider).toBe('deepseek-modlens');
+        expect(info.provider).toBe('deepseek-modlens-plus');
         expect(info.id).toBe('deepseek-v4-flash');
         expect(info.inputModalities).toEqual(['text', 'image']);
         for await (const _chunk of adapter.stream({
-            provider: 'deepseek-modlens',
+            provider: 'deepseek-modlens-plus',
             model: 'deepseek-v4-flash',
             messages: [],
         }) as AsyncIterable<unknown>) {
@@ -342,6 +348,7 @@ describe('dsh plugin request-time image conversion (v2)', () => {
                 messages: Array<{ content: Array<{ type: string; text?: string }> }>;
             }> = [];
             const ctx = {
+                get: () => undefined,
                 tools: { register: () => {} },
                 attachments: {
                     readImage: async () => ({
@@ -365,7 +372,7 @@ describe('dsh plugin request-time image conversion (v2)', () => {
             plugin.apply(ctx as never, {});
             const adapter = registered[0].adapter;
             const request = {
-                provider: 'deepseek-modlens',
+                provider: 'deepseek-modlens-plus',
                 model: 'm',
                 messages: [
                     {
@@ -404,6 +411,7 @@ describe('dsh plugin request-time image conversion (v2)', () => {
         const registered: Array<{ adapter: Record<string, CallableFunction> }> = [];
         plugin.apply(
             {
+                get: () => undefined,
                 tools: { register: () => {} },
                 attachments: {
                     readImage: async () => ({
@@ -428,7 +436,7 @@ describe('dsh plugin request-time image conversion (v2)', () => {
     }
 
     const imageRequest = (id: string) => ({
-        provider: 'deepseek-modlens',
+        provider: 'deepseek-modlens-plus',
         model: 'm',
         messages: [{ role: 'user', content: [{ type: 'image', attachment: { id } }] }],
     });

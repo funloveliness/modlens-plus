@@ -143,7 +143,11 @@ describe('executeOpenaiCompat', () => {
         expect(parsed.result).toEqual(structured);
     });
 
-    it('fails loudly when the gateway returns schema-shaped or wrong JSON', async () => {
+    it('passes schema-shaped gateway output through for the tolerance layer', async () => {
+        // The provider no longer enforces the vision schema: structural repair
+        // and degradation live in the analyzer's tolerance layer
+        // (src/tolerance.ts), so schema-shaped payloads resolve here and are
+        // repaired or degraded upstream, never rejected at the provider.
         vi.stubGlobal(
             'fetch',
             async () =>
@@ -155,21 +159,23 @@ describe('executeOpenaiCompat', () => {
                 ),
         );
 
-        await expect(
-            executeOpenaiCompat({
-                imageSource: tmpImage,
-                imageKind: 'local',
-                timeoutMs: 5000,
-                settings,
-            }),
-        ).rejects.toThrow('does not match the vision schema');
+        const output = await executeOpenaiCompat({
+            imageSource: tmpImage,
+            imageKind: 'local',
+            timeoutMs: 5000,
+            settings,
+        });
+        expect(output.result).toEqual({ type: 'object', properties: {} });
     });
 });
 
-describe('schema shape enforcement', () => {
-    it('rejects a partial result that used to pass the token check', async () => {
-        // {"summary":"x","ocr":null} satisfied the old check and reached the model
-        // as if it were evidence.
+describe('provider passthrough to the tolerance layer', () => {
+    it('passes a partial result through for the analyzer to degrade', async () => {
+        // {"summary":"x","ocr":null} used to satisfy an old token check and
+        // reach the model as if it were evidence. The provider now returns it
+        // raw and the analyzer's degrade path recovers it into loose evidence
+        // with an uncertainty note (src/tolerance.ts), so the provider's job
+        // is only to parse, never to judge the shape.
         vi.stubGlobal(
             'fetch',
             vi.fn(async () => ({
@@ -181,13 +187,12 @@ describe('schema shape enforcement', () => {
                 }),
             })),
         );
-        await expect(
-            executeOpenaiCompat({
-                imageSource: 'https://example.com/a.png',
-                imageKind: 'remote',
-                timeoutMs: 1000,
-                settings: { apiKey: 'k', baseUrl: 'https://api.example.com', model: 'm' },
-            }),
-        ).rejects.toThrow(/does not match the vision schema \(missing: ocr, layout/);
+        const output = await executeOpenaiCompat({
+            imageSource: 'https://example.com/a.png',
+            imageKind: 'remote',
+            timeoutMs: 1000,
+            settings: { apiKey: 'k', baseUrl: 'https://api.example.com', model: 'm' },
+        });
+        expect(output.result).toEqual({ summary: 'x', ocr: null });
     });
 });

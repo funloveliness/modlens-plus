@@ -6,7 +6,17 @@
 // caller which evidence fields were not reliably structured.
 
 export const REGION_TYPES = [
-    'title', 'subtitle', 'paragraph', 'list', 'table', 'chart', 'form', 'code', 'image', 'icon', 'other',
+    'title',
+    'subtitle',
+    'paragraph',
+    'list',
+    'table',
+    'chart',
+    'form',
+    'code',
+    'image',
+    'icon',
+    'other',
 ];
 
 /**
@@ -23,17 +33,22 @@ export function repairVisionResult(result: Record<string, unknown>): Record<stri
     if (typeof ocr === 'object' && ocr !== null) {
         const lines = Array.isArray(ocr.lines)
             ? ocr.lines
-                .filter((line): line is Record<string, unknown> =>
-                    typeof line === 'object' && line !== null && typeof line.text === 'string')
-                .map(line => ({
-                    text: line.text as string,
-                    language: typeof line.language === 'string' ? line.language : 'unknown',
-                }))
+                  .filter(
+                      (line): line is Record<string, unknown> =>
+                          typeof line === 'object' &&
+                          line !== null &&
+                          typeof line.text === 'string',
+                  )
+                  .map((line) => ({
+                      text: line.text as string,
+                      language: typeof line.language === 'string' ? line.language : 'unknown',
+                  }))
             : [];
         repaired.ocr = {
-            full_text: typeof ocr.full_text === 'string'
-                ? ocr.full_text
-                : lines.map(line => line.text).join('\n'),
+            full_text:
+                typeof ocr.full_text === 'string'
+                    ? ocr.full_text
+                    : lines.map((line) => line.text).join('\n'),
             lines,
         };
     }
@@ -42,18 +57,22 @@ export function repairVisionResult(result: Record<string, unknown>): Record<stri
     if (typeof layout === 'object' && layout !== null) {
         const regions = Array.isArray(layout.regions)
             ? layout.regions
-                .filter((region): region is Record<string, unknown> =>
-                    typeof region === 'object' && region !== null)
-                .map((region, index) => ({
-                    type: typeof region.type === 'string' && REGION_TYPES.includes(region.type)
-                        ? region.type
-                        : 'other',
-                    reading_order: typeof region.reading_order === 'number'
-                        && Number.isFinite(region.reading_order)
-                        ? region.reading_order
-                        : index + 1,
-                    text: typeof region.text === 'string' ? region.text : '',
-                }))
+                  .filter(
+                      (region): region is Record<string, unknown> =>
+                          typeof region === 'object' && region !== null,
+                  )
+                  .map((region, index) => ({
+                      type:
+                          typeof region.type === 'string' && REGION_TYPES.includes(region.type)
+                              ? region.type
+                              : 'other',
+                      reading_order:
+                          typeof region.reading_order === 'number' &&
+                          Number.isFinite(region.reading_order)
+                              ? region.reading_order
+                              : index + 1,
+                      text: typeof region.text === 'string' ? region.text : '',
+                  }))
             : [];
         repaired.layout = { regions };
     }
@@ -62,20 +81,26 @@ export function repairVisionResult(result: Record<string, unknown>): Record<stri
     if (typeof semantics === 'object' && semantics !== null) {
         const entities = Array.isArray(semantics.entities)
             ? semantics.entities
-                .filter((entity): entity is Record<string, unknown> =>
-                    typeof entity === 'object' && entity !== null && typeof entity.name === 'string')
-                .map(entity => ({
-                    name: entity.name as string,
-                    type: typeof entity.type === 'string' ? entity.type : 'entity',
-                }))
+                  .filter(
+                      (entity): entity is Record<string, unknown> =>
+                          typeof entity === 'object' &&
+                          entity !== null &&
+                          typeof entity.name === 'string',
+                  )
+                  .map((entity) => ({
+                      name: entity.name as string,
+                      type: typeof entity.type === 'string' ? entity.type : 'entity',
+                  }))
             : [];
         const relations = Array.isArray(semantics.relations)
-            ? semantics.relations
-                .filter((relation): relation is Record<string, unknown> =>
-                    typeof relation === 'object' && relation !== null
-                    && typeof relation.subject === 'string'
-                    && typeof relation.predicate === 'string'
-                    && typeof relation.object === 'string')
+            ? semantics.relations.filter(
+                  (relation): relation is Record<string, unknown> =>
+                      typeof relation === 'object' &&
+                      relation !== null &&
+                      typeof relation.subject === 'string' &&
+                      typeof relation.predicate === 'string' &&
+                      typeof relation.object === 'string',
+              )
             : [];
         repaired.semantics = {
             scene: typeof semantics.scene === 'string' ? semantics.scene : '',
@@ -112,20 +137,28 @@ export function degradeVisionResult(
 ): Record<string, unknown> {
     const ocr = result.ocr as Record<string, unknown> | undefined;
     const lines = Array.isArray(ocr?.lines) ? ocr.lines : [];
-    const fullText = typeof ocr?.full_text === 'string'
-        ? ocr.full_text
-        : lines
-            .filter((line): line is Record<string, unknown> =>
-                typeof line === 'object' && line !== null && typeof line.text === 'string')
-            .map(line => line.text as string)
-            .join('\n');
+    const fullText =
+        typeof ocr?.full_text === 'string'
+            ? ocr.full_text
+            : lines
+                  .filter(
+                      (line): line is Record<string, unknown> =>
+                          typeof line === 'object' &&
+                          line !== null &&
+                          typeof line.text === 'string',
+                  )
+                  .map((line) => line.text as string)
+                  .join('\n');
     const layout = result.layout as Record<string, unknown> | undefined;
     const semantics = result.semantics as Record<string, unknown> | undefined;
     const visual = result.visual as Record<string, unknown> | undefined;
     return {
-        summary: typeof result.summary === 'string'
-            ? result.summary
-            : fullText.length > 0 ? fullText.slice(0, 300) : 'Vision result (partially structured).',
+        summary:
+            typeof result.summary === 'string'
+                ? result.summary
+                : fullText.length > 0
+                  ? fullText.slice(0, 300)
+                  : 'Vision result (partially structured).',
         ocr: { full_text: fullText, lines },
         layout: { regions: Array.isArray(layout?.regions) ? layout.regions : [] },
         semantics: {

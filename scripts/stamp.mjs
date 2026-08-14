@@ -19,9 +19,20 @@ export function readPackageVersion(root = repoRoot) {
     return readPackage(root).version;
 }
 
-/** The skill directory name, derived from the scoped package name. */
-export function skillName(root = repoRoot) {
-    return readPackage(root).name.split('/').pop();
+/** The npm package the skill launchers fetch the CLI from. This fork's own
+ * package is `modlens-plus`, but the launchers keep resolving the upstream
+ * `@liustack/modlens` release (the CLI's npm identity is decoupled from the
+ * dsh-plugin package name on purpose; revisit when this fork publishes). */
+const LAUNCHER_PKG = '@liustack/modlens';
+
+/**
+ * The skill directory name. Fixed: the skill installs as `modlens` in harness
+ * skill dirs (INSTALL.md, the launchers, and the SKILL.md all name it), and
+ * that name does not follow the fork's package rename.
+ * @returns the skill directory name under `skills/`.
+ */
+export function skillName() {
+    return 'modlens';
 }
 
 /**
@@ -30,9 +41,9 @@ export function skillName(root = repoRoot) {
  * formatter that rebuilds that text for a given version. One pattern serves
  * both stamping (replace the text) and reading (capture the value).
  */
-export function stampTargets(base, pkgName) {
+export function stampTargets(base) {
     const skillFile = join(base, 'SKILL.md');
-    const escaped = pkgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = LAUNCHER_PKG.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return [
         {
             name: 'run.sh',
@@ -69,13 +80,13 @@ export function stampTargets(base, pkgName) {
             name: 'SKILL.md npx pin',
             file: skillFile,
             pattern: new RegExp(`npx --yes --package ${escaped}@(\\d+\\.\\d+\\.\\d+)`),
-            format: (version) => `npx --yes --package ${pkgName}@${version}`,
+            format: (version) => `npx --yes --package ${LAUNCHER_PKG}@${version}`,
         },
         {
             name: 'SKILL.md bunx pin',
             file: skillFile,
             pattern: new RegExp(`bunx --bun ${escaped}@(\\d+\\.\\d+\\.\\d+)`),
-            format: (version) => `bunx --bun ${pkgName}@${version}`,
+            format: (version) => `bunx --bun ${LAUNCHER_PKG}@${version}`,
         },
     ];
 }
@@ -84,9 +95,9 @@ export function stampTargets(base, pkgName) {
 export function stampLaunchers(root = repoRoot) {
     const pkg = readPackage(root);
     const version = pkg.version;
-    const base = join(root, 'skills', skillName(root));
+    const base = join(root, 'skills', skillName());
     const stamped = [];
-    for (const target of stampTargets(base, pkg.name)) {
+    for (const target of stampTargets(base)) {
         const before = readFileSync(target.file, 'utf-8');
         if (!target.pattern.test(before)) {
             throw new Error(`No version line to stamp in ${target.file}`);
@@ -102,8 +113,8 @@ export function stampLaunchers(root = repoRoot) {
 
 /** The version currently written in each launcher/reference file. */
 export function readStampedVersions(root = repoRoot) {
-    const base = join(root, 'skills', skillName(root));
-    return stampTargets(base, readPackage(root).name).map((target) => {
+    const base = join(root, 'skills', skillName());
+    return stampTargets(base).map((target) => {
         const match = readFileSync(target.file, 'utf-8').match(target.pattern);
         return { name: target.name, file: target.file, version: match ? match[1] : null };
     });

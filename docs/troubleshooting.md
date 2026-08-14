@@ -132,7 +132,7 @@ a range, but an explicit version or dist-tag skips it ([pnpm#9989](https://githu
 command carries `@latest`:
 
 ```sh
-npx -y @deepseek-ai/dsh plugin --profile <name> add @liustack/modlens@latest
+npx -y @deepseek-ai/dsh plugin --profile <name> add modlens-plus@latest
 ```
 
 dsh's reconcile notices the bundle declaration on the new version and
@@ -146,10 +146,10 @@ name, not `name@version`, so it survives future releases:
 
 ```yaml
 minimumReleaseAgeExclude:
-  - '@liustack/modlens'
+  - 'modlens-plus'
 ```
 
-then `npx -y @deepseek-ai/dsh plugin --profile <name> update @liustack/modlens`.
+then `npx -y @deepseek-ai/dsh plugin --profile <name> update modlens-plus`.
 The trade-off is honest either way: an explicit `@latest` (or the exclusion)
 opts modlens out of pnpm's supply-chain cooling-off window, so new releases
 install immediately.

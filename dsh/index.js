@@ -25,8 +25,12 @@ const OUTPUT_SCHEMA = JSON.parse(
 
 const CLI_TIMEOUT_MS = 180_000
 
+// The settings service is deliberately NOT injected: the bridge reads it via
+// ctx.get and a composition without the service must still load (see
+// registerSettings in settings.js). Injecting it here would stall the fiber in
+// PENDING forever on settings-less headless assemblies.
 export const name = 'modlens-plus'
-export const inject = ['tools', 'agents', 'attachments', 'llm', 'settings']
+export const inject = ['tools', 'agents', 'attachments', 'llm']
 
 export const MEDIA_EXT = {
   'image/png': '.png',

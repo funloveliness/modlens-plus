@@ -10,7 +10,7 @@ Include the exact command, the full output, and the modlens and Node versions, t
 
 ## Supported versions
 
-This is a fast-moving CLI. Fixes land on the latest published version on npm (`@liustack/modlens`), so upgrade to the newest release before reporting.
+This is a fast-moving CLI. Fixes land on the latest published version on npm (`modlens-plus`), so upgrade to the newest release before reporting.
 
 ## What to keep in mind
 

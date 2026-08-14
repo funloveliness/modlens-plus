@@ -10,7 +10,7 @@ describe('launcher version stamping', () => {
     });
 
     it('rewrites only the version value and leaves the line shape intact', () => {
-        for (const target of stampTargets('/base', '@scope/pkg')) {
+        for (const target of stampTargets('/base')) {
             const original = target.format('0.0.0');
             const restamped = original.replace(target.pattern, target.format('9.9.9'));
             expect(restamped).toBe(target.format('9.9.9'));

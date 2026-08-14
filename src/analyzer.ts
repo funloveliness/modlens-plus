@@ -15,7 +15,7 @@ import {
     type VisionProvider,
 } from './providers/index.ts';
 import { missingSchemaFields } from './schema.ts';
-import { repairVisionResult, degradeVisionResult } from './tolerance.ts';
+import { degradeVisionResult, repairVisionResult } from './tolerance.ts';
 import { redactSecrets } from './util/redact.ts';
 
 export interface AnalyzeOptions {
@@ -385,9 +385,8 @@ async function runProvider(
     if (missing.length > 0) {
         const repaired = repairVisionResult(parsed.result as Record<string, unknown>);
         const stillMissing = missingSchemaFields(repaired);
-        parsed.result = stillMissing.length > 0
-            ? degradeVisionResult(repaired, stillMissing)
-            : repaired;
+        parsed.result =
+            stillMissing.length > 0 ? degradeVisionResult(repaired, stillMissing) : repaired;
     }
 
     return parsed;

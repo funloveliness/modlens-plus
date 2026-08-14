@@ -19,8 +19,8 @@
 
 <p align="center">
   <a href="https://x.com/liustack"><img src="https://img.shields.io/badge/follow-%40liustack-black?style=flat-square&logo=x&logoColor=white" alt="Follow @liustack on X"></a>
-  <a href="https://www.npmjs.com/package/@liustack/modlens"><img src="https://img.shields.io/npm/v/@liustack/modlens?style=flat-square&label=npm&color=cb3837" alt="npm"></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/@liustack/modlens?style=flat-square" alt="Node.js"></a>
+  <a href="https://www.npmjs.com/package/modlens-plus"><img src="https://img.shields.io/npm/v/modlens-plus?style=flat-square&label=npm&color=cb3837" alt="npm"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/modlens-plus?style=flat-square" alt="Node.js"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
   <img src="https://img.shields.io/badge/Not%20backed%20by-Y%20Combinator-FF6600?style=flat-square&logo=ycombinator&logoColor=white" alt="Not backed by Y Combinator">
   <img src="https://img.shields.io/badge/users-unknown-lightgrey?style=flat-square" alt="Users unknown">
@@ -34,7 +34,7 @@ DeepSeek 和 GLM 没有视觉能力，无法进行图片识别。ModLens 借助�
 
 ## 亮点
 
-**🥇 全网第一个支持 DeepSeek Harness（dsh）的外挂视觉识别插件：**一条命令 `npx -y @deepseek-ai/dsh plugin --profile web add @liustack/modlens@latest`，dsh 背后的纯文本 DeepSeek 模型即可通过原生 `read_image` 工具读图。如果 dsh 提示 `declares no dsh.bundle`，是 pnpm 的发布冷静期把版本压旧了，一行配置可解，见[故障排查](docs/troubleshooting.md#dsh-says-declares-no-dshbundle--installed-as-a-plain-dependency)。要粘贴识图，把模型选择器切到插件新增的两个条目之一：**`DeepSeek-V4-Flash (modlens vision)`** 或 **`DeepSeek-V4-Pro (modlens vision)`**，贴图放行、发请求时转成证据（你的消息保留原生缩略图）、仍由原 DeepSeek 路由回答。包装只覆盖 DeepSeek 与 GLM 的文本模型，两家自己的视觉型号自动排除。
+**🥇 全网第一个支持 DeepSeek Harness（dsh）的外挂视觉识别插件：**一条命令 `npx -y @deepseek-ai/dsh plugin --profile web add modlens-plus@latest`，dsh 背后的纯文本 DeepSeek 模型即可通过原生 `read_image` 工具读图。如果 dsh 提示 `declares no dsh.bundle`，是 pnpm 的发布冷静期把版本压旧了，一行配置可解，见[故障排查](docs/troubleshooting.md#dsh-says-declares-no-dshbundle--installed-as-a-plain-dependency)。要粘贴识图，把模型选择器切到插件新增的两个条目之一：**`DeepSeek-V4-Flash (vision)`** 或 **`DeepSeek-V4-Pro (vision)`**，贴图放行、发请求时转成证据（你的消息保留原生缩略图）、仍由原 DeepSeek 路由回答。包装只覆盖 DeepSeek 与 GLM 的文本模型，两家自己的视觉型号自动排除。
 
 **直接粘贴图片识别** 无需先保存成文件再提供路径。
 
@@ -62,10 +62,10 @@ agy                                                           # 浏览器完成�
 **DeepSeek Harness（dsh）用户不走 skill 流程**，本包就是原生 dsh 插件：
 
 ```sh
-npx -y @deepseek-ai/dsh plugin --profile web add @liustack/modlens@latest
+npx -y @deepseek-ai/dsh plugin --profile web add modlens-plus@latest
 ```
 
-装完即有 `read_image` 工具，选「(modlens vision)」模型变体即可直接粘贴识图。引擎配置同样在 `~/.modlens`，详见[宿主接入](docs/harness-setup.md)。
+装完即有 `read_image` 工具，选「(vision)」模型变体即可直接粘贴识图。引擎配置同样在 `~/.modlens`，详见[宿主接入](docs/harness-setup.md)。
 
 ## 用法
 

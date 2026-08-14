@@ -648,3 +648,50 @@ describe.skipIf(onWindows)('provider failover', () => {
         );
     }, 20_000);
 });
+
+describe('openai provider tolerance degrade', () => {
+    it('degrades a partial openai result into loose evidence with an uncertainty note', async () => {
+        // The provider passes raw output through; the analyzer's tolerance
+        // layer repairs what it can and degrades what still fails the strict
+        // schema (src/tolerance.ts): a half-structured result becomes usable
+        // loose evidence flagged in uncertainty, never a failed read.
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async () => ({
+                ok: true,
+                json: async () => ({
+                    choices: [
+                        { message: { content: JSON.stringify({ summary: 'x', ocr: null }) } },
+                    ],
+                }),
+            })),
+        );
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'modlens-openai-degrade-'));
+        try {
+            const image = path.join(dir, 'shot.png');
+            fs.writeFileSync(image, Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+
+            const result = await analyzeImage({
+                input: image,
+                provider: 'openai',
+                timeoutMs: 20_000,
+                config: {
+                    provider: 'openai',
+                    providers: {
+                        openai: { apiKey: 'k', baseUrl: 'https://api.example.com', model: 'm' },
+                    },
+                },
+            });
+
+            expect((result.result as { summary: string }).summary).toBe('x');
+            expect((result.result as { ocr: { full_text: string } }).ocr.full_text).toBe('');
+            expect(
+                (result.result as { uncertainty: string[] }).uncertainty.some((u) =>
+                    u.includes('missing'),
+                ),
+            ).toBe(true);
+        } finally {
+            fs.rmSync(dir, { recursive: true, force: true });
+        }
+    }, 30_000);
+});
