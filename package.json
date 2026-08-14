@@ -75,7 +75,7 @@
     "@deepseek-ai/dsh-client-ui-settings": "^0.1.0-rc.5",
     "@deepseek-ai/dsh-client-ui-settings-plugins": "^0.1.0-rc.5",
     "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.5",
-    "@types/node": "^22.19.7",
+    "@types/node": "^26.2.0",
     "@types/react": "~18.3.1",
     "@vitest/coverage-v8": "^3.2.7",
     "lightningcss": "^1.30.0",
