@@ -25,7 +25,7 @@ const OUTPUT_SCHEMA = JSON.parse(
 
 const CLI_TIMEOUT_MS = 180_000
 
-export const name = 'modlens'
+export const name = 'modlens-funloveliness'
 export const inject = ['tools', 'agents', 'attachments', 'llm', 'settings']
 
 export const MEDIA_EXT = {
@@ -134,7 +134,7 @@ export function apply(ctx, config = {}) {
  */
 function registerVisionProvider(ctx, config) {
   const upstream = config.upstream || 'deepseek-official'
-  const providerId = config.providerId || 'deepseek-modlens'
+  const providerId = config.providerId || 'deepseek-modlens-funloveliness'
   // Wrap only the text-only members of these families. Their own vision
   // models (present or future: deepseek-vl/ocr/janus, glm-4.5v, glm-5v-...)
   // need no bridge and are excluded by name and by declared modality.
@@ -161,7 +161,7 @@ function registerVisionProvider(ctx, config) {
       // defaults a plain object must supply itself (their absence is exactly
       // the silent registration failure this catch used to swallow).
       providerInfo(provider) {
-        return { id: provider, name: 'DeepSeek (modlens vision)' }
+        return { id: provider, name: 'DeepSeek (modlens-funloveliness vision)' }
       },
       providerRetryPolicy() {
         return undefined
@@ -171,7 +171,7 @@ function registerVisionProvider(ctx, config) {
           const models = await ctx.llm.listModels(upstream, signal)
           return models.filter(shouldWrap).map((model) => ({
             ...withVision(model),
-            name: `${model.name ?? model.id} (modlens vision)`,
+            name: `${model.name ?? model.id} (modlens-funloveliness vision)`,
           }))
         } catch {
           return []
