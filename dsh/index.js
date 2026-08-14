@@ -5,7 +5,7 @@
 // gamble. The engine is spawned from ../dist/main.js inside this package:
 // no PATH lookup, no npx, the plugin and its engine version-lock together.
 //
-// Loaded via the cordis.patch.yml row `@liustack/modlens/dsh` (see the
+// Loaded via the cordis.patch.yml row `modlens-plus` (see the
 // package.json `dsh.bundle` manifest). Providers, reuse grants, and guard
 // rules keep living in ~/.modlens/config.json, shared with every harness;
 // the settings bridge (settings.js) mirrors GUI-editable non-secret fields
@@ -25,7 +25,7 @@ const OUTPUT_SCHEMA = JSON.parse(
 
 const CLI_TIMEOUT_MS = 180_000
 
-export const name = 'modlens-funloveliness'
+export const name = 'modlens-plus'
 export const inject = ['tools', 'agents', 'attachments', 'llm', 'settings']
 
 export const MEDIA_EXT = {
@@ -57,7 +57,7 @@ export function apply(ctx, config = {}) {
   ctx.tools.register({
     name: 'read_image',
     description:
-      'Read an image through the modlens vision bridge. Use whenever a message references an image the current model cannot see: a local file path or an http(s) URL to a screenshot, photo, chart, diagram, or document scan. Returns structured evidence with every word transcribed (ocr.full_text), layout regions in reading order, semantics, and an uncertainty list; quote the evidence instead of guessing. Requires a configured modlens engine (run `npx @liustack/modlens doctor` in a terminal to check).',
+      'Read an image through the modlens-plus vision bridge. Use whenever a message references an image the current model cannot see: a local file path or an http(s) URL to a screenshot, photo, chart, diagram, or document scan. Returns structured evidence with every word transcribed (ocr.full_text), layout regions in reading order, semantics, and an uncertainty list; quote the evidence instead of guessing. Requires a configured modlens-plus engine (run `modlens-plus doctor` in a terminal to check).',
     parameters: {
       type: 'object',
       properties: {
@@ -134,7 +134,7 @@ export function apply(ctx, config = {}) {
  */
 function registerVisionProvider(ctx, config) {
   const upstream = config.upstream || 'deepseek-official'
-  const providerId = config.providerId || 'deepseek-modlens-funloveliness'
+  const providerId = config.providerId || 'deepseek-modlens-plus'
   // Wrap only the text-only members of these families. Their own vision
   // models (present or future: deepseek-vl/ocr/janus, glm-4.5v, glm-5v-...)
   // need no bridge and are excluded by name and by declared modality.
@@ -161,7 +161,7 @@ function registerVisionProvider(ctx, config) {
       // defaults a plain object must supply itself (their absence is exactly
       // the silent registration failure this catch used to swallow).
       providerInfo(provider) {
-        return { id: provider, name: 'DeepSeek (modlens-funloveliness vision)' }
+        return { id: provider, name: 'DeepSeek (modlens-plus vision)' }
       },
       providerRetryPolicy() {
         return undefined
@@ -171,7 +171,7 @@ function registerVisionProvider(ctx, config) {
           const models = await ctx.llm.listModels(upstream, signal)
           return models.filter(shouldWrap).map((model) => ({
             ...withVision(model),
-            name: `${model.name ?? model.id} (modlens-funloveliness vision)`,
+            name: `${model.name ?? model.id} (modlens-plus vision)`,
           }))
         } catch {
           return []
@@ -400,9 +400,9 @@ async function readImageBlock(ctx, block, signal) {
       ok: false,
       block: {
         type: 'text',
-        text: `[A pasted image could not be read by modlens: ${
+        text: `[A pasted image could not be read by modlens-plus: ${
           error instanceof Error ? error.message.slice(0, 300) : String(error)
-        }. Tell the user, and suggest running \`npx @liustack/modlens doctor\`.]`,
+        }. Tell the user, and suggest running \`modlens-plus doctor\`.]`,
       },
     }
   } finally {

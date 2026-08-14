@@ -10,7 +10,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import z from '@deepseek-ai/schemastery'
 
-export const MODLENS_SETTINGS_NAMESPACE = 'modlens-funloveliness'
+export const MODLENS_SETTINGS_NAMESPACE = 'modlens-plus'
 
 // Providers that accept apiKeyEnv/baseUrl/model here. CLI-only providers
 // (antigravity-cli, claude-cli) have no fields in the settings namespace.
