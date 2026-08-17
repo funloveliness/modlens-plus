@@ -75,18 +75,23 @@ function writeConfigFile(value) {
  * Register the `modlens` settings namespace and keep the CLI config file in
  * sync. Settings-optional: a composition without the settings service skips
  * registration and the plugin keeps reading ~/.modlens/config.json directly.
+ *
+ * Registration rides `ctx.inject` (the same delayed pattern the official
+ * `installSettingsSection` uses) instead of an immediate `ctx.get`: the Loader
+ * starts every plugin fiber in parallel, so an immediate read can run before
+ * the settings provider's fiber is ACTIVE and silently return undefined. The
+ * injected callback runs only once the settings service is actually served,
+ * in whatever composition and load order the host uses.
  * @param ctx - the plugin context (settings service optional).
- * @returns the settings scope, or undefined when no settings service exists.
  */
 export function registerSettings(ctx) {
-  const settings = ctx.get('settings')
-  if (settings === undefined) return undefined
-  const scope = settings.register(MODLENS_SETTINGS_NAMESPACE, SETTINGS_SCHEMA)
-  scope.watch((next) => {
-    writeConfigFile(next)
+  ctx.inject(['settings'], (sctx) => {
+    const scope = sctx.settings.register(MODLENS_SETTINGS_NAMESPACE, SETTINGS_SCHEMA)
+    scope.watch((next) => {
+      writeConfigFile(next)
+    })
+    writeConfigFile(scope.get())
   })
-  writeConfigFile(scope.get())
-  return scope
 }
 
 /**

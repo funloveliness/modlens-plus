@@ -51,6 +51,7 @@ describe('dsh plugin auto-read (phase 2)', () => {
         const ctx = {
             // No settings service in the mock: exercises registerSettings' skip path.
             get: () => undefined,
+            inject: () => {},
             tools: { register: () => {} },
             attachments: {
                 readImage: async () => ({
@@ -113,6 +114,7 @@ describe('dsh plugin auto-read (phase 2)', () => {
         plugin.apply(
             {
                 get: () => undefined,
+                inject: () => {},
                 tools: { register: () => {} },
                 // An API-shape drift: readImage resolves, but with no data field.
                 attachments: { readImage: async () => ({ ref: { mediaType: 'image/png' } }) },
@@ -149,6 +151,7 @@ describe('dsh plugin auto-read (phase 2)', () => {
                 plugin.apply(
                     {
                         get: () => undefined,
+                        inject: () => {},
                         tools: { register: () => {} },
                         attachments: {
                             readImage: async () => ({
@@ -223,6 +226,7 @@ describe('dsh plugin auto-read (phase 2)', () => {
         plugin.apply(
             {
                 get: () => undefined,
+                inject: () => {},
                 tools: { register: () => {} },
                 attachments: {},
                 on: (event: string, fn: unknown) => {
@@ -243,6 +247,7 @@ describe('dsh plugin vision provider (phase 3)', () => {
         };
         const ctx = {
             get: () => undefined,
+            inject: () => {},
             tools: { register: () => {} },
             attachments: {},
             on: () => {},
@@ -349,6 +354,7 @@ describe('dsh plugin request-time image conversion (v2)', () => {
             }> = [];
             const ctx = {
                 get: () => undefined,
+                inject: () => {},
                 tools: { register: () => {} },
                 attachments: {
                     readImage: async () => ({
@@ -412,6 +418,7 @@ describe('dsh plugin request-time image conversion (v2)', () => {
         plugin.apply(
             {
                 get: () => undefined,
+                inject: () => {},
                 tools: { register: () => {} },
                 attachments: {
                     readImage: async () => ({
@@ -572,5 +579,69 @@ describe('format mapping lockstep', () => {
         for (const [mime, ext] of Object.entries(plugin.MEDIA_EXT)) {
             expect(MIME_BY_EXT[ext]).toBe(mime);
         }
+    });
+});
+
+describe('dsh plugin settings registration (registerSettings)', () => {
+    // @ts-expect-error untyped on purpose
+    const plugin = async () =>
+        (await import('../dsh/index.js')) as {
+            apply: (ctx: unknown, config?: Record<string, unknown>) => void;
+        };
+
+    // registerSettings mirrors the section into ~/.modlens/config.json; the
+    // tests back up and restore that file so a run never touches real state.
+    const configPath = () => path.join(os.homedir(), '.modlens', 'config.json');
+    const backup = () => {
+        const file = configPath();
+        return fs.existsSync(file) ? fs.readFileSync(file) : null;
+    };
+    const restore = (saved: Buffer | null) => {
+        const file = configPath();
+        if (saved) fs.writeFileSync(file, saved);
+        else fs.rmSync(file, { force: true });
+    };
+
+    it('registers the namespace only when the settings service is served', async () => {
+        const saved = backup();
+        try {
+            const registered: string[] = [];
+            const ctx = {
+                get: () => undefined,
+                tools: { register: () => {} },
+                attachments: {},
+                on: () => {},
+                inject: (_services: string[], callback: (sctx: unknown) => void) => {
+                    callback({
+                        settings: {
+                            register: (ns: string) => {
+                                registered.push(ns);
+                                return { get: () => ({}), watch: () => {} };
+                            },
+                        },
+                    });
+                    return { await: async () => {} };
+                },
+            };
+            (await plugin()).apply(ctx as never, {});
+            expect(registered).toEqual(['modlens-plus']);
+        } finally {
+            restore(saved);
+        }
+    });
+
+    it('skips registration silently when no settings service exists', async () => {
+        const calls: string[] = [];
+        const ctx = {
+            get: () => undefined,
+            // No settings service: inject is a no-op, exactly like cordis
+            // keeping the fiber PENDING until the service appears.
+            inject: () => {},
+            tools: { register: () => {} },
+            attachments: {},
+            on: () => {},
+        };
+        (await plugin()).apply(ctx as never, {});
+        expect(calls).toEqual([]);
     });
 });
